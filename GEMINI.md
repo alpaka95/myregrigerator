@@ -89,6 +89,26 @@ The AI will use a consistent styling approach, preferring modern solutions like 
 
 ## **Accessibility or A11Y Standards:** The AI implements accessibility features to empower all users, assuming a wide variety of users with different physical abilities, mental abilities, age groups, education levels, and learning styles.
 
+## **High-Quality Content & UX Standards (AdSense Compliance)**
+
+The AI adheres to Google AdSense and Webmaster quality guidelines to ensure the application provides maximum value to users and remains eligible for monetization.
+
+- **Original Value & Depth:**
+    - Avoid creating redundant or duplicate pages/components.
+    - Focus on providing rich, unique information that differentiates the app from generic alternatives (e.g., personalized AI insights, specific food management tips).
+    - Prioritize quality over quantity; every page must serve a clear, valuable purpose.
+- **User-Centric Navigation:**
+    - Ensure the site structure is intuitive and easy to navigate.
+    - Users should find what they need quickly without misleading "clickbait" or empty exploration paths.
+- **Transparency & Trust:**
+    - Always deliver the information or services promised by the UI (e.g., if a button says "Analyze Spending," it should provide a deep analysis, not just a summary).
+    - Use appropriate keywords and labels that accurately reflect the content.
+- **Content Balance:**
+    - Maintain a professional balance between functional elements and informational content.
+    - Avoid "empty" pages (like 404s or success messages) that lack useful next steps or context.
+- **Engagement & Retention:**
+    - Design features that encourage users to return, such as interactive charts, personalized AI assistants, and helpful notifications.
+
 ## **Routing and Navigation**
 
 For routing, the AI will use `react-router-dom` as the default.

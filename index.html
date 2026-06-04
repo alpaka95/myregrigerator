@@ -3,11 +3,36 @@
   <head>
     <meta charset="UTF-8" />
     <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>myapp</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
+    <meta name="theme-color" content="#ffffff" />
+    <meta name="mobile-web-app-capable" content="yes" />
+    <meta name="apple-mobile-web-app-status-bar-style" content="default" />
+    <meta name="apple-mobile-web-app-title" content="내 냉장고" />
+    <link rel="apple-touch-icon" href="/favicon.svg" />
+    <title>내 냉장고 관리 (My Fridge)</title>
   </head>
   <body>
     <div id="root"></div>
+    <script>
+      // 개발 환경에서 꼬인 서비스 워커 강제 제거
+      if ('serviceWorker' in navigator) {
+        navigator.serviceWorker.getRegistrations().then(function(registrations) {
+          for(let registration of registrations) {
+            registration.unregister();
+            console.log('ServiceWorker unregistered');
+          }
+        });
+      }
+
+      window.onerror = function(msg, url, lineNo, columnNo, error) {
+        console.error('Error: ' + msg + '\nScript: ' + url + '\nLine: ' + lineNo + '\nColumn: ' + columnNo + '\nStackTrace: ' +  error);
+        const root = document.getElementById('root');
+        if (root && root.innerHTML === "") {
+          root.innerHTML = '<div style="padding: 20px; color: red; font-family: sans-serif;"><h3>앱 실행 오류</h3><p>' + msg + '</p><p>새로고침을 해보세요.</p></div>';
+        }
+        return false;
+      };
+    </script>
     <script type="module" src="/src/main.tsx"></script>
   </body>
 </html>
