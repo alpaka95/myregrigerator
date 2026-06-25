@@ -17,7 +17,7 @@ import AIAssistant from './components/AIAssistant';
 import MealPlan from './pages/MealPlan';
 
 function App() {
-  const { user, loading, initialized, setUser, setLoading, setInitialized } = useAuthStore();
+  const { user, initialized, setUser, setLoading, setInitialized } = useAuthStore();
   const { lastDeletedItem, undoDelete } = useFridgeStore();
   const [snackbarOpen, setSnackbarOpen] = useState(false);
   const location = useLocation();

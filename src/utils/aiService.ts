@@ -5,13 +5,14 @@ import type { FoodItem, Expense } from "../types";
 
 export const aiService = {
   // 사용 가능한 모델 중 generateContent를 지원하는 가장 적합한 모델 찾기
-  async getBestModel() {
+  async getBestModel(signal?: AbortSignal) {
     const { config } = useAIStore.getState();
     if (!config.geminiApiKey) throw new Error("API 키가 없습니다.");
     
     try {
       const response = await fetch(
-        `https://generativelanguage.googleapis.com/v1beta/models?key=${config.geminiApiKey}`
+        `https://generativelanguage.googleapis.com/v1beta/models?key=${config.geminiApiKey}`,
+        { signal }
       );
       const data = await response.json();
       if (!response.ok) throw new Error(data.error?.message || "모델 목록 가져오기 실패");
@@ -45,26 +46,30 @@ export const aiService = {
       if (any) return any.name.replace('models/', '');
 
       return config.geminiModel || "gemini-1.5-flash";
-    } catch (err) {
+    } catch (err: any) {
+      if (err.name === 'AbortError') throw err;
       console.warn("[AI] Failed to fetch model list, using fallback ID.");
       return config.geminiModel || "gemini-1.5-flash";
     }
   },
 
-  async safeGenerate(prompt: string, isImage: boolean = false, imageData?: string) {
+  async safeGenerate(prompt: string, isImage: boolean = false, imageData?: string, history: any[] = [], signal?: AbortSignal) {
     const { config } = useAIStore.getState();
     
     if (config.preferredProvider === 'openai') {
       const openai = new OpenAI({ apiKey: config.openaiApiKey, dangerouslyAllowBrowser: true });
+      const messages = history.map(m => ({ role: m.role === 'ai' ? 'assistant' : 'user', content: m.content }));
+      messages.push({ role: "user", content: prompt });
+      
       const response = await openai.chat.completions.create({
         model: "gpt-4o",
-        messages: [{ role: "user", content: prompt }],
-      });
+        messages: messages as any,
+      }, { signal });
       return response.choices[0].message.content || "";
     }
 
     // Gemini 처리
-    const bestModelId = await this.getBestModel();
+    const bestModelId = await this.getBestModel(signal);
     console.log(`[AI] Initializing Gemini with model: ${bestModelId}`);
 
     const genAI = new GoogleGenerativeAI(config.geminiApiKey!);
@@ -74,10 +79,19 @@ export const aiService = {
     let lastError = null;
 
     for (const version of apiVersions) {
+      if (signal?.aborted) throw new Error("AbortError");
+      
       try {
         console.log(`[AI] Trying version: ${version} for model: ${bestModelId}`);
         const model = genAI.getGenerativeModel({ model: bestModelId }, { apiVersion: version as any });
         
+        const chat = model.startChat({
+          history: history.map(m => ({
+            role: m.role === 'ai' ? 'model' : 'user',
+            parts: [{ text: m.content }],
+          })),
+        });
+
         let result;
         if (isImage && imageData) {
           result = await model.generateContent([
@@ -85,13 +99,16 @@ export const aiService = {
             { inlineData: { data: imageData.split(',')[1], mimeType: "image/jpeg" } }
           ]);
         } else {
-          result = await model.generateContent(prompt);
+          result = await chat.sendMessage(prompt);
         }
+        
+        if (signal?.aborted) throw new Error("AbortError");
         
         const text = result.response.text();
         if (text) return text;
       } catch (err: any) {
         lastError = err;
+        if (err.name === 'AbortError' || err.message === 'AbortError') throw err;
         console.warn(`[AI] Failed with ${version}: ${err.message}`);
         
         // 할당량 초과는 재시도하지 않음
@@ -99,12 +116,10 @@ export const aiService = {
           throw new Error("AI 할당량이 초과되었습니다. 잠시 후 다시 시도해주세요.");
         }
         
-        // 404가 아니면 다른 에러일 수 있으므로 기록하고 다음 버전 시도
         continue;
       }
     }
 
-    // 모든 시도가 실패한 경우
     if (lastError) {
       if (lastError.message?.includes('404')) {
         throw new Error(`[AI 에러] 선택한 모델(${bestModelId})을 찾을 수 없습니다. 설정에서 다른 모델을 선택하거나 나중에 다시 시도해주세요.`);
@@ -115,23 +130,52 @@ export const aiService = {
     return "";
   },
 
-  async getRecipeChef(items: FoodItem[]) {
-    return this.safeGenerate(`냉장고 재료: ${items.map(i => i.name).join(", ") || "계란"}. 요리 3가지 추천. 한국어.`);
+  async chat(message: string, history: any[], items: FoodItem[], expenses: Expense[], signal?: AbortSignal) {
+    const context = `
+당신은 우리집 냉장고를 관리해주는 똑똑한 AI 어시스턴트입니다.
+현재 냉장고 재료: ${items.map(i => i.name).join(", ") || "비어있음"}
+최근 지출 내역 요약: ${expenses.slice(0, 5).map(e => `${e.category}(${e.amount}원)`).join(", ")}
+
+사용자의 질문에 친절하고 구체적으로 답변해주세요. 
+요청이 있다면 냉장고에 없는 재료를 사용한 요리도 기꺼이 추천해주시고, 식재료 관리 팁이나 절약 방법도 알려주세요.
+이전 대화 흐름을 고려하여 자연스럽게 대화하세요. 만약 사용자가 같은 질문을 반복한다면, 이전 답변과는 다른 관점이나 추가 정보를 제공하여 더 풍부한 대화를 이끌어주세요.
+`;
+    return this.safeGenerate(`${context}\n\n사용자: ${message}`, false, undefined, history, signal);
   },
 
-  async getExpenseAnalysis(expenses: Expense[]) {
-    return this.safeGenerate(`지출 내역: ${expenses.map(e => `${e.category}: ${e.amount}`).join("\n") || "없음"}. 분석 및 팁. 한국어.`);
+  async getRecipeChef(items: FoodItem[], signal?: AbortSignal) {
+    const prompt = `냉장고 재료: ${items.map(i => i.name).join(", ") || "계란, 파, 김치"}. 
+위의 재료를 주재료로 하되, 집에 있을법한 기본 양념이나 저렴하게 구입 가능한 부재료를 추가하여 만들 수 있는 맛있는 요리 3가지를 추천해줘.
+각 요리마다 필요한 재료(냉장고에 있는 것 vs 추가로 필요한 것), 간단한 레시피, 그리고 추천 이유를 설명해줘. 한국어로 친절하게 답변해줘.`;
+    return this.safeGenerate(prompt, false, undefined, [], signal);
   },
 
-  async parseReceipt(data: string, isImage: boolean = false) {
-    return this.safeGenerate(`영수증 분석 JSON: {"items": [{"name": "품목", "quantity": 1}], "totalAmount": 0}. 영수증: ${isImage ? "[이미지]" : data}`, isImage, data);
+  async getExpenseAnalysis(expenses: Expense[], signal?: AbortSignal) {
+    return this.safeGenerate(`지출 내역: ${expenses.map(e => `${e.category}: ${e.amount}`).join("\n") || "없음"}. 
+이 데이터를 바탕으로 현재 소비 패턴을 분석하고, 식비를 절약할 수 있는 구체적인 팁을 3가지 이상 제공해줘. 한국어로 답변해줘.`, false, undefined, [], signal);
   },
 
-  async getWeeklyMealPlan(items: FoodItem[], hasChild: boolean, customRequest?: string) {
-    const itemsList = items.map(i => i.name).join(", ") || "계란, 두부, 양파 등 기본 식재료";
-    const prompt = `당신은 전문 영양사이자 요리사입니다. 현재 냉장고 재료를 최대한 활용하여 일주일 치(월~일) 아침/점심/저녁 식단을 짜주세요. 
-현재 재료: ${itemsList}
-대상: ${hasChild ? "유아가 포함된 가족 (맵지 않고 자극적이지 않은 식단 필요)" : "성인 가족"}
+  async parseReceipt(data: string, isImage: boolean = false, signal?: AbortSignal) {
+    return this.safeGenerate(`영수증 분석 JSON: {"items": [{"name": "품목", "quantity": 1, "unit": "개"}], "totalAmount": 0, "storeName": "가게이름", "date": "YYYY-MM-DD"}. 영수증: ${isImage ? "[이미지]" : data}`, isImage, data, [], signal);
+  },
+
+  async getWeeklyMealPlan(items: FoodItem[], hasChild: boolean, useFridge: boolean, customRequest?: string, schoolMealMode: boolean = false, signal?: AbortSignal) {
+    const itemsList = useFridge ? (items.map(i => i.name).join(", ") || "계란, 두부, 양파 등 기본 식재료") : "사용 가능한 모든 식재료";
+    
+    let contextStr = "";
+    if (schoolMealMode) {
+      contextStr = `대한민국 학교 급식(초등 및 유아) 식단 빅데이터와 영양 기준을 바탕으로 일주일 치(월~일) 아침/점심/저녁 식단을 짜주세요.
+단순 메뉴가 아니라 '밥, 국, 메인반찬, 보조반찬, 김치/후식'의 급식 구성 패턴을 따라주세요. 
+저염식, 영양 균형, 아이들이 선호하는 메뉴 패턴을 최우선으로 고려하세요.`;
+    } else {
+      contextStr = useFridge 
+        ? `현재 냉장고 재료를 최대한 활용하여 일주일 치(월~일) 아침/점심/저녁 식단을 짜주세요. 
+현재 재료: ${itemsList}`
+        : `일주일 치(월~일) 건강하고 맛있는 아침/점심/저녁 식단을 짜주세요. 냉장고 재료에 국한되지 않고 다양한 메뉴를 추천해주세요.`;
+    }
+
+    const prompt = `당신은 전문 영양사이자 학교 급식 조리사입니다. ${contextStr}
+대상: ${hasChild ? "초등학생 및 유아가 포함된 가족 (성장기 영양 보충 필요)" : "성인 가족"}
 추가 요청사항: ${customRequest || "없음"}
 
 결과는 반드시 다음과 같은 JSON 형식으로만 답변해주세요. 다른 설명은 절대 하지 마세요.
@@ -140,27 +184,27 @@ export const aiService = {
   "plan": [
     {
       "day": "월요일",
-      "breakfast": {"menu": "요리명", "recipeLink": "https://www.10000recipe.com/recipe/list.html?q=요리명", "reason": "추천 이유 (간략히)"},
-      "lunch": {"menu": "요리명", "recipeLink": "https://www.10000recipe.com/recipe/list.html?q=요리명", "reason": "추천 이유 (간략히)"},
-      "dinner": {"menu": "요리명", "recipeLink": "https://www.10000recipe.com/recipe/list.html?q=요리명", "reason": "추천 이유 (간략히)"}
+      "breakfast": {"menu": "요리명", "recipeLink": "https://www.10000recipe.com/recipe/list.html?q=요리명", "reason": "영양 포인트 (간략히)"},
+      "lunch": {"menu": "요리명", "recipeLink": "https://www.10000recipe.com/recipe/list.html?q=요리명", "reason": "패턴 분석 근거 (간략히)"},
+      "dinner": {"menu": "요리명", "recipeLink": "https://www.10000recipe.com/recipe/list.html?q=요리명", "reason": "조합 이유 (간략히)"}
     }
   ],
   "requiredIngredients": ["사야 할 재료 1", "사야 할 재료 2"],
-  "tip": "식단 관리 팁"
+  "tip": "식단 관리 및 영양 팁"
 }
 
 * 월요일부터 일요일까지 7일치를 모두 포함하세요.
-* reason은 왜 이 메뉴를 추천하는지 (예: 냉장고의 OO 재료 활용, 영양 균형 등) 짧게 적어주세요.
-* recipeLink는 만개한레시피 검색 결과 주소를 기본으로 하되 가능한 정확하게 만들어주세요.`;
+* schoolMealMode가 true일 경우 menu에 '현미밥, 소고기미역국, 돈가스, 멸치볶음, 깍두기' 처럼 전체 상차림 구성을 적어주세요.
+* recipeLink는 대표 메뉴 하나를 기준으로 만개한레시피 검색 결과 주소를 만들어주세요.`;
 
-    const response = await this.safeGenerate(prompt);
+    const response = await this.safeGenerate(prompt, false, undefined, [], signal);
     if (!response) return null;
     
     try {
       const jsonMatch = response.match(/\{[\s\S]*\}/);
       if (jsonMatch) return JSON.parse(jsonMatch[0]);
       return response;
-    } catch (e) {
+    } catch {
       return response;
     }
   },

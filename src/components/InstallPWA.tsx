@@ -67,7 +67,7 @@ const InstallPWA: React.FC = () => {
       {/* 2. 안드로이드지만 설치 버튼이 아직 안 떴을 때 (안내 문구) */}
       {isAndroid && !showInstallButton && !window.matchMedia('(display-mode: standalone)').matches && (
         <Paper variant="outlined" sx={{ p: 2, borderRadius: 3, bgcolor: 'background.default', borderStyle: 'dashed' }}>
-          <Stack spacing={1} alignItems="center">
+          <Stack spacing={1} sx={{ alignItems: 'center' }}>
             <Info size={20} color="#666" />
             <Typography variant="body2" color="text.secondary">
               브라우저 메뉴에서 <strong>'앱 설치'</strong> 또는 <strong>'홈 화면에 추가'</strong>를 선택해 주세요. 

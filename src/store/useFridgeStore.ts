@@ -44,6 +44,7 @@ export const useFridgeStore = create<RefrigeratorState & {
   setSubCompartments: (subCompartments: SubCompartment[]) => void;
   setShoppingList: (shoppingList: ShoppingItem[]) => void;
   setRecipes: (recipes: Recipe[]) => void;
+  clearStorage: () => Promise<void>;
 }>((set, get) => ({
   items: [],
   compartments: [],
@@ -601,16 +602,16 @@ export const useFridgeStore = create<RefrigeratorState & {
     const id = Math.random().toString(36).substring(2, 9);
     const createdAt = new Date().toISOString();
     const sortOrder = get().recipes.length;
-    const newRecipe = { ...recipe, id, createdAt, sortOrder };
+    const recipeData = cleanData({ ...recipe, id, createdAt, sortOrder });
 
     if (householdId) {
       try {
-        await setDoc(doc(db, `households/${householdId}/recipes`, id), newRecipe);
+        await setDoc(doc(db, `households/${householdId}/recipes`, id), recipeData);
       } catch (err: any) {
         alert(`레시피 추가 실패: ${err.message}`);
       }
     } else {
-      set((state) => ({ recipes: [...state.recipes, newRecipe] }));
+      set((state) => ({ recipes: [...state.recipes, recipeData as Recipe] }));
     }
   },
 
@@ -629,9 +630,11 @@ export const useFridgeStore = create<RefrigeratorState & {
 
   updateRecipe: async (id, updates) => {
     const householdId = getHouseholdId();
+    const cleanUpdates = cleanData(updates);
+
     if (householdId) {
       try {
-        await updateDoc(doc(db, `households/${householdId}/recipes`, id), updates);
+        await updateDoc(doc(db, `households/${householdId}/recipes`, id), cleanUpdates);
       } catch (err: any) {
         alert(`레시피 수정 실패: ${err.message}`);
       }
@@ -660,6 +663,25 @@ export const useFridgeStore = create<RefrigeratorState & {
         await batch.commit();
       } catch (err: any) {
         console.error("Reorder failed in Firestore:", err);
+      }
+    }
+  },
+
+  clearStorage: async () => {
+    const householdId = getHouseholdId();
+    set({ items: [] });
+
+    if (householdId) {
+      try {
+        const batch = writeBatch(db);
+        const currentItems = get().items;
+        currentItems.forEach(item => {
+          const itemRef = doc(db, `households/${householdId}/items`, item.id);
+          batch.delete(itemRef);
+        });
+        await batch.commit();
+      } catch (err: any) {
+        console.error("Clear storage failed:", err);
       }
     }
   },

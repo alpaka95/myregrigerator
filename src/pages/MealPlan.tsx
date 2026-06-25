@@ -18,6 +18,7 @@ import {
 } from '@mui/material';
 import { 
   ChevronLeft, 
+  ChevronRight,
   Edit3, 
   Trash2, 
   ExternalLink, 
@@ -49,27 +50,55 @@ import {
 import { CSS } from '@dnd-kit/utilities';
 
 const DAYS = ['월요일', '화요일', '수요일', '목요일', '금요일', '토요일', '일요일'];
+const SHORT_DAYS = ['월', '화', '수', '목', '금', '토', '일'];
 const MEAL_TYPES = ['breakfast', 'lunch', 'dinner'] as const;
 
 const MealPlan: React.FC = () => {
   const dayRefs = useRef<(HTMLDivElement | null)[]>([]);
+  const scrollContainerRef = useRef<HTMLDivElement | null>(null);
   const [viewMode, setViewMode] = useState<'daily' | 'weekly'>('daily');
   const [selectedArchiveId, setSelectedArchiveId] = useState<string | null>(null);
-  const [isShareOpen, setIsShareOpen] = useState(false);
+  const [currentDayIndex, setCurrentDayIndex] = useState(0);
+
+  const scrollToDay = (index: number) => {
+    if (dayRefs.current[index]) {
+      dayRefs.current[index]?.scrollIntoView({
+        behavior: "smooth",
+        inline: "center",
+        block: "nearest"
+      });
+      setCurrentDayIndex(index);
+    }
+  };
+
+  const handleScroll = () => {
+    if (!scrollContainerRef.current) return;
+    const container = scrollContainerRef.current;
+    const scrollLeft = container.scrollLeft;
+    const itemWidth = container.scrollWidth / DAYS.length;
+    const index = Math.round(scrollLeft / itemWidth);
+    if (index !== currentDayIndex) {
+      setCurrentDayIndex(index);
+    }
+  };
+
+  const scrollLeft = () => {
+    if (scrollContainerRef.current) {
+      scrollContainerRef.current.scrollBy({ left: -300, behavior: 'smooth' });
+    }
+  };
+
+  const scrollRight = () => {
+    if (scrollContainerRef.current) {
+      scrollContainerRef.current.scrollBy({ left: 300, behavior: 'smooth' });
+    }
+  };
 
   useEffect(() => {
     if (viewMode === 'daily') {
       const today = new Date().getDay();
       const index = today === 0 ? 6 : today - 1;
-      if (dayRefs.current[index]) {
-        setTimeout(() => {
-          dayRefs.current[index]?.scrollIntoView({
-            behavior: "smooth",
-            inline: "center",
-            block: "nearest"
-          });
-        }, 300);
-      }
+      scrollToDay(index);
     }
   }, [viewMode]);
 
@@ -172,8 +201,8 @@ const MealPlan: React.FC = () => {
                 <Button 
                   size="small" 
                   variant="outlined" 
-                  startIcon={<Share2 size={14} />}
-                  onClick={() => setIsShareOpen(true)}
+                   
+                  
                   sx={{ borderRadius: 2, fontSize: '0.7rem', fontWeight: 800, height: 32, px: 1.5, display: { xs: 'none', sm: 'inline-flex' } }}
                 >
                   공유
@@ -208,62 +237,115 @@ const MealPlan: React.FC = () => {
               </Stack>
             </Box>
 
-            {viewMode === 'daily' ? (
-              <Box sx={{ 
-                display: 'flex', 
-                overflowX: 'auto', 
-                gap: 1.5, 
-                pb: 1,
-                px: 0.5,
-                '&::-webkit-scrollbar': { height: 4 },
-                '&::-webkit-scrollbar-thumb': { bgcolor: 'rgba(0,0,0,0.1)', borderRadius: 10 },
-                scrollSnapType: 'x mandatory'
-              }}>
-                {DAYS.map((day, idx) => (
-                  <Paper 
-                    key={day} 
-                    ref={el => { dayRefs.current[idx] = el; }}
+            {viewMode === 'daily' && (
+              <Box sx={{ position: 'relative' }}>
+                <Box sx={{ position: 'relative', px: { xs: 0, sm: 4 } }}>
+                  <IconButton 
+                    onClick={scrollLeft}
                     sx={{ 
-                      minWidth: { xs: '260px', sm: 280 }, 
-                      p: 1.5, 
-                      borderRadius: 3, 
-                      scrollSnapAlign: 'center',
-                      bgcolor: '#fff',
-                      border: '1px solid rgba(0,0,0,0.05)',
+                      position: 'absolute', 
+                      left: { xs: 4, sm: 0 }, 
+                      top: '50%', 
+                      transform: 'translateY(-50%)', 
+                      zIndex: 10,
                       display: 'flex',
-                      flexDirection: 'column',
-                      gap: 1,
-                      boxShadow: '0 2px 8px rgba(0,0,0,0.02)'
+                      bgcolor: 'rgba(255, 255, 255, 0.9)',
+                      boxShadow: '0 4px 12px rgba(0,0,0,0.15)',
+                      backdropFilter: 'blur(4px)',
+                      '&:hover': { bgcolor: 'white' },
+                      width: { xs: 32, sm: 40 },
+                      height: { xs: 32, sm: 40 }
                     }}
                   >
-                    <Typography variant="subtitle2" sx={{ fontWeight: 900, textAlign: 'center', color: 'text.secondary', mb: 0.5, fontSize: '0.75rem' }}>{day}</Typography>
-                    
-                    <Stack spacing={0.8}>
-                      {MEAL_TYPES.map(type => {
-                        const id = `${day}_${type}`;
-                        const meal = (weeklyMenu || []).find(m => m.id === id);
-                        return (
-                          <MealSlot 
-                            key={id}
-                            id={id}
-                            label={type === 'breakfast' ? '아침' : type === 'lunch' ? '점심' : '저녁'}
-                            color={type === 'breakfast' ? '#f0fdf4' : type === 'lunch' ? '#f0f9ff' : '#fff7ed'}
-                            labelColor={type === 'breakfast' ? '#16a34a' : type === 'lunch' ? '#0284c7' : '#ea580c'}
-                            meal={meal}
-                            userId={user?.uid}
-                            onEdit={() => handleEditClick(id, meal?.menu, meal?.recipeLink)}
-                            onDelete={() => handleDelete(id)}
-                            onRead={() => handleSlotClick(id)}
-                            onDoubleClick={() => handleDoubleClick(id)}
-                            isTarget={!!selectedArchiveId}
-                          />
-                        );
-                      })}
-                    </Stack>
-                  </Paper>
-                ))}
+                    <ChevronLeft size={20} />
+                  </IconButton>
+
+                  <Box 
+                    ref={scrollContainerRef}
+                    onScroll={handleScroll}
+                    sx={{ 
+                      display: 'flex', 
+                      overflowX: 'auto', 
+                      gap: 1.5, 
+                      pb: 1,
+                      px: { xs: 2, sm: 0.5 },
+                      '&::-webkit-scrollbar': { height: 4 },
+                      '&::-webkit-scrollbar-thumb': { bgcolor: 'rgba(0,0,0,0.1)', borderRadius: 10 },
+                      scrollSnapType: 'x mandatory',
+                      scrollBehavior: 'smooth',
+                      '&::-webkit-scrollbar': { display: 'none' },
+                      scrollbarWidth: 'none'
+                    }}
+                  >
+                    {DAYS.map((day, idx) => (
+                      <Paper 
+                        key={day} 
+                        ref={el => { dayRefs.current[idx] = el; }}
+                        sx={{ 
+                          minWidth: { xs: '260px', sm: 280 }, 
+                          p: 1.5, 
+                          borderRadius: 3, 
+                          scrollSnapAlign: 'center',
+                          bgcolor: '#fff',
+                          border: '1px solid rgba(0,0,0,0.05)',
+                          display: 'flex',
+                          flexDirection: 'column',
+                          gap: 1,
+                          boxShadow: '0 2px 8px rgba(0,0,0,0.02)'
+                        }}
+                      >
+                        <Typography variant="subtitle2" sx={{ fontWeight: 900, textAlign: 'center', color: 'text.secondary', mb: 0.5, fontSize: '0.75rem' }}>{day}</Typography>
+                        
+                        <Stack spacing={0.8}>
+                          {MEAL_TYPES.map(type => {
+                            const id = `${day}_${type}`;
+                            const meal = (weeklyMenu || []).find(m => m.id === id);
+                            return (
+                              <MealSlot 
+                                key={id}
+                                id={id}
+                                label={type === 'breakfast' ? '아침' : type === 'lunch' ? '점심' : '저녁'}
+                                color={type === 'breakfast' ? '#f0fdf4' : type === 'lunch' ? '#f0f9ff' : '#fff7ed'}
+                                labelColor={type === 'breakfast' ? '#16a34a' : type === 'lunch' ? '#0284c7' : '#ea580c'}
+                                meal={meal}
+                                userId={user?.uid}
+                                onEdit={() => handleEditClick(id, meal?.menu, meal?.recipeLink)}
+                                onDelete={() => handleDelete(id)}
+                                onRead={() => handleSlotClick(id)}
+                                onDoubleClick={() => handleDoubleClick(id)}
+                                isTarget={!!selectedArchiveId}
+                              />
+                            );
+                          })}
+                        </Stack>
+                      </Paper>
+                    ))}
+                  </Box>
+
+                  <IconButton 
+                    onClick={scrollRight}
+                    sx={{ 
+                      position: 'absolute', 
+                      right: { xs: 4, sm: 0 }, 
+                      top: '50%', 
+                      transform: 'translateY(-50%)', 
+                      zIndex: 10,
+                      display: 'flex',
+                      bgcolor: 'rgba(255, 255, 255, 0.9)',
+                      boxShadow: '0 4px 12px rgba(0,0,0,0.15)',
+                      backdropFilter: 'blur(4px)',
+                      '&:hover': { bgcolor: 'white' },
+                      width: { xs: 32, sm: 40 },
+                      height: { xs: 32, sm: 40 }
+                    }}
+                  >
+                    <ChevronRight size={20} />
+                  </IconButton>
+                </Box>
               </Box>
-            ) : (
+            )}
+            
+            {viewMode === 'weekly' && (
               <Box sx={{ display: 'grid', gridTemplateColumns: { xs: 'repeat(2, 1fr)', sm: 'repeat(4, 1fr)', md: 'repeat(8, 1fr)' }, gap: 1, pb: 1 }}>
                 {DAYS.map((day) => (
                   <Paper key={day} sx={{ p: 1, borderRadius: 2, border: '1px solid rgba(0,0,0,0.05)', bgcolor: 'white' }}>
@@ -369,7 +451,7 @@ const MealPlan: React.FC = () => {
           </DialogActions>
         </Dialog>
 
-        <ShareDialog open={isShareOpen} onClose={() => setIsShareOpen(false)} />
+         
 
         <DragOverlay>
           {activeId && activeMeal ? (

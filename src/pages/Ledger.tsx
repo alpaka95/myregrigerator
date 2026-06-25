@@ -303,10 +303,10 @@ const Ledger = () => {
           <Stack direction="row" spacing={0.5}>
             <IconButton 
               size="small" 
-              onClick={() => setIsShareOpen(true)} 
+                
               sx={{ width: 32, height: 32, opacity: 0.5, '&:hover': { opacity: 1, bgcolor: 'rgba(0,0,0,0.03)' }, p: 0.5 }}
             >
-              <Share2 size={16} />
+               
             </IconButton>
             <IconButton 
               size="small" 
@@ -794,7 +794,7 @@ const Ledger = () => {
         </DialogActions>
       </Dialog>
 
-      <ShareDialog open={isShareOpen} onClose={() => setIsShareOpen(false)} />
+       
     </Box>
   );
 };

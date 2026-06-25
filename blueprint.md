@@ -80,6 +80,21 @@
     - Highly optimized Weekly Meal Planner: compact cards for daily plans, fixed selection instructions at the top, and improved mobile layout.
     - Adjusted FAB positions on mobile to prevent overlapping.
 
+### Phase 7: Advanced UI & AI Persistence - COMPLETED
+1. **AI Assistant Enhancements:**
+    - **Persistence:** Conversation history now persists for 24 hours, allowing users to pick up where they left off. [DONE]
+    - **Custom Chat Input:** Added a text input field for direct communication with the AI, moving beyond predefined buttons. [DONE]
+    - **Cancellation Support:** Users can now cancel long-running AI requests (chat, recipe suggestions, expense analysis, meal planning) midway through execution. [DONE]
+    - **Context Awareness:** The AI now considers current fridge inventory, recent expenses, and conversation history for more relevant and personalized responses. [DONE]
+    - **Variety in Recommendations:** Prompts refined to suggest ingredients outside the fridge when appropriate, and provide more diverse menu options. [DONE]
+2. **Dashboard & Item Management:**
+    - **Clear Storage:** Added a new "Clear Storage" (비우기) feature to quickly delete all items in the refrigerator. [DONE]
+    - **Rapid Compartment Addition:** Users can now add new compartments and sub-compartments directly from the item detail/alert setting modal. [DONE]
+3. **Drag-and-Drop Reliability:**
+    - Improved hit detection for moving items from sub-compartments to parent compartments. [DONE]
+    - Enhanced visual feedback during drag-and-drop operations for better clarity and feel. [DONE]
+    - Ensured state consistency between local state and Firestore when removing sub-compartment associations. [DONE]
+
 ## Content Quality & UX Standards (AdSense Aligned)
 This project follows Google's best practices for high-quality content and user experience:
 - **Unique Value:** The AI Assistant and Ledger provide personalized insights that go beyond simple data entry.
@@ -87,3 +102,16 @@ This project follows Google's best practices for high-quality content and user e
 - **No Redundancy:** Minimalistic design philosophy prevents duplicate pages and ensures every screen adds value.
 - **Rich Information:** Automated recipe suggestions and spending analysis provide depth and utility.
 - **Transparency:** Clear labels and immediate feedback ensure users always know the state of their data and the result of their actions.
+
+## Phase 8: AI Meal Planner Migration & Integration (Current)
+1. **Remove AI Meal Planner from AI Assistant popup:**
+   - Simplify `src/components/AIAssistant.tsx` to focus purely on chat, recipe recommendations, receipt scanning, and expense analysis.
+   - Remove the `mode` tab-toggle from the assistant popup, making the chat interface full-height and clutter-free.
+2. **Integrate AI Meal Planner into Meal Plan Page (`src/pages/MealPlan.tsx`):**
+   - Introduce an `activeTab` state (`'calendar' | 'ai'`) in `src/pages/MealPlan.tsx`.
+   - Add a beautifully styled `ToggleButtonGroup` centered below the header to toggle between **"나의 식단표" (My Meal Plan)** and **"AI 식단 추천" (AI Meal Planner)**.
+   - Dynamically adjust header actions and content layout to match the active tab context.
+3. **Refactor & Polish `src/components/MealPlanner.tsx`:**
+   - Refactor the generated meal card layout into a responsive grid (`gridTemplateColumns: { xs: '1fr', sm: 'repeat(2, 1fr)', md: 'repeat(3, 1fr)', lg: 'repeat(4, 1fr)' }`) so it fills the screen elegantly without over-stretching on wide desktop screens.
+   - Adjust spacing and background textures for a modern, tactile, premium look and feel.
+

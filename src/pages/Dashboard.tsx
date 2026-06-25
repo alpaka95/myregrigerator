@@ -9,7 +9,7 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { 
   Refrigerator, Snowflake, Waves, Layers, Plus, 
   Carrot, Apple, Droplets, Edit2, Check, X, Layout, ShoppingCart, Trash2, Users, LogOut, Utensils, ExternalLink,
-  Sparkles, ChevronRight, TrendingUp
+  TrendingUp
 } from 'lucide-react';
 import { 
   DndContext, useDroppable, DragOverlay,
@@ -86,7 +86,7 @@ const SubCompartmentSection = ({ sc, items, comp, onDeleteItem, onRemoveSub, onI
     <Box ref={setNodeRef} sx={{ 
       pl: 1, 
       borderLeft: `2px solid ${isOver ? comp.color : comp.color + '20'}`, 
-      bgcolor: isOver ? `${comp.color}08` : 'transparent', 
+      bgcolor: isOver ? `${comp.color}15` : 'transparent', 
       transition: 'all 0.2s', 
       py: 0.5, 
       borderRadius: '0 8px 8px 0',
@@ -191,10 +191,10 @@ const CompartmentCard = ({ comp, items, subComps, onNavigate, onRename, onDelete
             minHeight: comp.gridSpan === 12 ? 140 : 110, 
             transition: 'all 0.2s', 
             borderRadius: '16px', 
-            boxShadow: isRootOver ? `0 0 15px ${comp.color}20` : '0 4px 20px rgba(0,0,0,0.05)' 
+            boxShadow: isRootOver ? `0 0 15px ${comp.color}40` : '0 4px 20px rgba(0,0,0,0.05)' 
           }}
         >
-          <CardContent sx={{ p: 1.5, '&:last-child': { pb: 1.5 } }}>
+          <CardContent sx={{ p: 1.5, '&:last-child': { pb: 1.5 }, height: '100%', display: 'flex', flexDirection: 'column' }}>
             <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', mb: 1.2 }}>
               <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, flex: 1 }}>
                 <Box sx={{ p: 0.6, borderRadius: '8px', bgcolor: `${comp.color}15`, color: comp.color, display: 'flex' }}><Icon size={18} /></Box>
@@ -224,16 +224,17 @@ const CompartmentCard = ({ comp, items, subComps, onNavigate, onRename, onDelete
               </Box>
             </Box>
 
-            <Stack spacing={1}>
+            <Stack spacing={1} sx={{ flex: 1 }}>
               {(subComps || []).map((sc: any) => (
                 <SubCompartmentSection key={sc.id} sc={sc} comp={comp} items={(items || []).filter((i: any) => i.subCompartmentId === sc.id)} onDeleteItem={onDeleteItem} onEditItem={onEditItem} onRemoveSub={onRemoveSub} onInlineAdd={onInlineAdd} />
               ))}
               
               <Box sx={{ 
-                display: 'flex', gap: 0.5, flexWrap: 'wrap', minHeight: 24, 
+                display: 'flex', gap: 0.5, flexWrap: 'wrap', minHeight: 40, 
                 bgcolor: 'transparent',
                 borderRadius: '8px',
-                transition: 'all 0.2s', p: 0.2
+                transition: 'all 0.2s', p: 0.2,
+                flex: 1
               }}>
                 <SortableContext items={(items || []).filter((i:any) => !i.subCompartmentId).map((i:any) => i.id)} strategy={rectSortingStrategy}>
                   {(items || []).filter((i:any) => !i.subCompartmentId).map((item:any) => <SortableItemChip key={item.id} item={item} comp={comp} onDelete={onDeleteItem} onEdit={onEditItem} />)}
@@ -550,9 +551,9 @@ const Dashboard = () => {
         updateItem(activeFoodItem.id, { compartmentId: overSubComp.parentId, subCompartmentId: overSubComp.id });
       } else if (isRootDrop) {
         const compId = String(over.id).replace('root_', '');
-        updateItem(activeFoodItem.id, { compartmentId: compId, subCompartmentId: undefined });
+        updateItem(activeFoodItem.id, { compartmentId: compId, subCompartmentId: '' });
       } else if (overComp) { 
-        updateItem(activeFoodItem.id, { compartmentId: overComp.id, subCompartmentId: undefined }); 
+        updateItem(activeFoodItem.id, { compartmentId: overComp.id, subCompartmentId: '' }); 
       }
       return;
     }
@@ -768,7 +769,7 @@ const Dashboard = () => {
 
         <DragOverlay>
           {activeId && activeItem ? (
-            <Chip label={activeItem.name} size="small" sx={{ borderRadius: '5px', bgcolor: 'primary.main', color: 'white', boxShadow: '0 4px 8px rgba(0,0,0,0.1)', fontWeight: 800, fontSize: '0.6rem' }} />
+            <Chip label={activeItem.name} size="small" sx={{ borderRadius: '5px', bgcolor: 'primary.main', color: 'white', boxShadow: '0 4px 12px rgba(0,0,0,0.2)', fontWeight: 800, fontSize: '0.65rem' }} />
           ) : activeId && activeShoppingItem ? (
             <Paper elevation={4} sx={{ p: 0.3, pl: 0.5, borderRadius: '5px', display: 'flex', alignItems: 'center', border: '1px solid rgba(0,0,0,0.1)', bgcolor: 'white' }}>
               <Checkbox size="small" checked={activeShoppingItem.completed} sx={{ p: 0.1 }} />
@@ -838,7 +839,7 @@ const Dashboard = () => {
                 onChange={(e) => setItemEditData({ ...itemEditData, name: e.target.value })}
               />
               
-              <Stack direction="row" spacing={2}>
+              <Stack direction="row" spacing={1} sx={{ alignItems: 'flex-start' }}>
                 <FormControl fullWidth size="small">
                   <InputLabel>보관 장소</InputLabel>
                   <Select
@@ -851,21 +852,40 @@ const Dashboard = () => {
                     ))}
                   </Select>
                 </FormControl>
+                <IconButton 
+                  size="small" 
+                  onClick={() => setIsCompDialogOpen(true)}
+                  sx={{ mt: 0.5, bgcolor: 'primary.50', color: 'primary.main' }}
+                >
+                  <Plus size={18} />
+                </IconButton>
+              </Stack>
 
-                {filteredSubComps.length > 0 && (
-                  <FormControl fullWidth size="small">
-                    <InputLabel>세부 칸</InputLabel>
-                    <Select
-                      value={itemEditData.subCompartmentId}
-                      label="세부 칸"
-                      onChange={(e) => setItemEditData({ ...itemEditData, subCompartmentId: e.target.value })}
-                    >
-                      <MenuItem value="">미지정</MenuItem>
-                      {filteredSubComps.map((sc) => (
-                        <MenuItem key={sc.id} value={sc.id}>{sc.name}</MenuItem>
-                      ))}
-                    </Select>
-                  </FormControl>
+              <Stack direction="row" spacing={1} sx={{ alignItems: 'flex-start' }}>
+                <FormControl fullWidth size="small">
+                  <InputLabel>세부 칸</InputLabel>
+                  <Select
+                    value={itemEditData.subCompartmentId}
+                    label="세부 칸"
+                    onChange={(e) => setItemEditData({ ...itemEditData, subCompartmentId: e.target.value })}
+                  >
+                    <MenuItem value="">미지정</MenuItem>
+                    {filteredSubComps.map((sc) => (
+                      <MenuItem key={sc.id} value={sc.id}>{sc.name}</MenuItem>
+                    ))}
+                  </Select>
+                </FormControl>
+                {itemEditData.compartmentId && (
+                  <IconButton 
+                    size="small" 
+                    onClick={() => {
+                      const name = prompt('새 세부 칸 이름을 입력하세요:');
+                      if (name) addSubCompartment(itemEditData.compartmentId, name);
+                    }}
+                    sx={{ mt: 0.5, bgcolor: 'secondary.50', color: 'secondary.main' }}
+                  >
+                    <Plus size={18} />
+                  </IconButton>
                 )}
               </Stack>
 
@@ -902,8 +922,8 @@ const Dashboard = () => {
                   fullWidth 
                   type="number" 
                   size="small" 
-                  value={itemEditData.danger} 
-                  onChange={(e) => setItemEditData({ ...itemEditData, danger: Number(e.target.value) })}
+                  value={itemEditData.warning} 
+                  onChange={(e) => setItemEditData({ ...itemEditData, warning: Number(e.target.value) })}
                   placeholder="예: 14"
                 />
               </Box>

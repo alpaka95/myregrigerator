@@ -66,6 +66,18 @@ export interface UserProfile {
   householdId: string | null;
 }
 
+export interface MealPlanDay {
+  day: string;
+  breakfast: { menu: string; recipeLink: string; reason?: string };
+  lunch: { menu: string; recipeLink: string; reason?: string };
+  dinner: { menu: string; recipeLink: string; reason?: string };
+}
+
+export interface MealPlanResponse {
+  plan: MealPlanDay[];
+  requiredIngredients: string[];
+}
+
 export interface Household {
   id: string;
   inviteCode: string;

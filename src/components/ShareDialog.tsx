@@ -23,7 +23,7 @@ import {
   Share2,
   Send,
   Globe,
-  MessageCircle,
+  
   Link as LinkIcon,
   Sparkles
 } from 'lucide-react';

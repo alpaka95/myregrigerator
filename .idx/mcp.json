@@ -7,6 +7,13 @@
         "firebase-tools@latest",
         "experimental:mcp"
       ]
+    },
+    "stitch": {
+      "command": "npx",
+      "args": [
+        "-y",
+        "stitch-mcp"
+      ]
     }
   }
 }
