@@ -1,6 +1,6 @@
 import { create } from 'zustand';
 import { persist } from 'zustand/middleware';
-import type { AIState, MealPlanResponse } from '../types/index';
+import type { AIState, MealPlanResponse, AIConfig } from '../types/index';
 
 export interface AIMessage {
   role: 'ai' | 'user';
@@ -15,14 +15,38 @@ export interface MealPlanHistoryItem {
   requiredIngredients: string[];
 }
 
+export interface ChallengeStep {
+  day: number;
+  recipeName: string;
+  ingredientsUsed: string[];
+  instructions: string;
+  completed: boolean;
+}
+
+export interface EmptyingChallenge {
+  id: string;
+  startDate: number;
+  targetItems: string[];
+  steps: ChallengeStep[];
+  estimatedSavings: number;
+  completed: boolean;
+}
+
 interface ExtendedAIState extends AIState {
+  config: AIConfig & {
+    dietPreferences?: string[];
+  };
   messages: AIMessage[];
   mealPlanHistory: MealPlanHistoryItem[];
+  activeChallenge: EmptyingChallenge | null;
   setMessages: (messages: AIMessage[]) => void;
   addMessage: (message: Omit<AIMessage, 'timestamp'>) => void;
   clearMessages: () => void;
   addMealPlanToHistory: (plan: MealPlanResponse, requiredIngredients: string[]) => void;
   clearMealPlanHistory: () => void;
+  startChallenge: (challenge: EmptyingChallenge) => void;
+  toggleChallengeStep: (day: number) => void;
+  cancelChallenge: () => void;
 }
 
 export const useAIStore = create<ExtendedAIState>()(
@@ -31,9 +55,11 @@ export const useAIStore = create<ExtendedAIState>()(
       config: {
         preferredProvider: 'gemini',
         geminiModel: 'gemini-1.5-flash',
+        dietPreferences: [],
       },
       messages: [],
       mealPlanHistory: [],
+      activeChallenge: null,
       updateConfig: (updates) =>
         set((state) => ({
           config: { ...state.config, ...updates },
@@ -58,6 +84,22 @@ export const useAIStore = create<ExtendedAIState>()(
         return { mealPlanHistory: newHistory };
       }),
       clearMealPlanHistory: () => set({ mealPlanHistory: [] }),
+      startChallenge: (challenge) => set({ activeChallenge: challenge }),
+      toggleChallengeStep: (day) => set((state) => {
+        if (!state.activeChallenge) return {};
+        const updatedSteps = state.activeChallenge.steps.map(step => 
+          step.day === day ? { ...step, completed: !step.completed } : step
+        );
+        const allCompleted = updatedSteps.every(step => step.completed);
+        return {
+          activeChallenge: {
+            ...state.activeChallenge,
+            steps: updatedSteps,
+            completed: allCompleted
+          }
+        };
+      }),
+      cancelChallenge: () => set({ activeChallenge: null }),
     }),
     {
       name: 'refrigerator-ai-storage-v2',

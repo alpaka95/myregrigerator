@@ -1,3 +1,4 @@
+/* eslint-disable react-hooks/set-state-in-effect */
 import React, { useState, useEffect } from 'react';
 import { Button, Snackbar, Alert, Box, Typography, Paper } from '@mui/material';
 import { Download, Share, Info } from 'lucide-react';
@@ -5,19 +6,17 @@ import { Download, Share, Info } from 'lucide-react';
 const InstallPWA: React.FC = () => {
   const [deferredPrompt, setDeferredPrompt] = useState<any>(null);
   const [showInstallButton, setShowInstallButton] = useState(false);
-  const [isIOS, setIsIOS] = useState(false);
-  const [isAndroid, setIsAndroid] = useState(false);
+  const [isIOS] = useState(() => {
+    const ua = navigator.userAgent;
+    return /iPad|iPhone|iPod/.test(ua) && !(window as any).MSStream;
+  });
+  const [isAndroid] = useState(() => {
+    const ua = navigator.userAgent;
+    return /Android/.test(ua);
+  });
   const [showIOSHint, setShowIOSHint] = useState(false);
 
   useEffect(() => {
-    // OS 체크
-    const ua = navigator.userAgent;
-    const isIOSDevice = /iPad|iPhone|iPod/.test(ua) && !(window as any).MSStream;
-    const isAndroidDevice = /Android/.test(ua);
-    
-    setIsIOS(isIOSDevice);
-    setIsAndroid(isAndroidDevice);
-
     // 안드로이드/크롬 설치 프롬프트 이벤트 리스너
     const handler = (e: any) => {
       console.log('✅ PWA 설치 프롬프트가 감지되었습니다.');

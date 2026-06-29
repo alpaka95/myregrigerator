@@ -18,7 +18,8 @@ import {
   CircularProgress,
   Select,
   MenuItem,
-  Divider
+  Divider,
+  Chip
 } from '@mui/material';
 import { ChevronLeft, Save, RefreshCw, Activity, Sparkles, Zap } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
@@ -33,6 +34,7 @@ const Settings: React.FC = () => {
   const [openaiKey, setOpenaiKey] = React.useState(config.openaiApiKey || '');
   const [provider, setProvider] = React.useState(config.preferredProvider);
   const [geminiModel, setGeminiModel] = React.useState(config.geminiModel || 'gemini-1.5-flash');
+  const [dietPrefs, setDietPrefs] = React.useState<string[]>(config.dietPreferences || []);
   
   const [diagnosing, setDiagnosing] = React.useState(false);
   const [diagResult, setDiagnoseResult] = React.useState<string[] | null>(null);
@@ -42,7 +44,8 @@ const Settings: React.FC = () => {
       geminiApiKey: geminiKey.trim(),
       openaiApiKey: openaiKey.trim(),
       preferredProvider: provider,
-      geminiModel: geminiModel
+      geminiModel: geminiModel,
+      dietPreferences: dietPrefs
     });
     alert('✅ 설정이 저장되었습니다!');
   };
@@ -164,6 +167,37 @@ const Settings: React.FC = () => {
                 <TextField fullWidth type="password" placeholder="sk-로 시작하는 키" value={openaiKey} onChange={(e) => setOpenaiKey(e.target.value)} />
               </Box>
             )}
+
+            <Box sx={{ mt: 1.5 }}>
+              <Typography variant="body2" sx={{ fontWeight: 800, mb: 1.5 }}>🥗 식습관 취향 필터 (AI 레시피 및 식단용)</Typography>
+              <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 1 }}>
+                {['비건(채식)', '저염식', '다이어트/고단백', '키토/저탄고지', '맵지 않게', '유아/어린이 맞춤'].map(pref => {
+                  const isChecked = dietPrefs.includes(pref);
+                  return (
+                    <Chip
+                      key={pref}
+                      label={pref}
+                      clickable
+                      color={isChecked ? "primary" : "default"}
+                      variant={isChecked ? "filled" : "outlined"}
+                      onClick={() => {
+                        setDietPrefs(prev => 
+                          isChecked ? prev.filter(p => p !== pref) : [...prev, pref]
+                        );
+                      }}
+                      sx={{ 
+                        fontWeight: 800, 
+                        borderRadius: '8px',
+                        '&.MuiChip-colorPrimary': {
+                          background: 'linear-gradient(135deg, #6366f1 0%, #a855f7 100%)',
+                          border: 'none'
+                        }
+                      }}
+                    />
+                  );
+                })}
+              </Box>
+            </Box>
 
             <Divider />
 

@@ -33,6 +33,8 @@ import { useFridgeStore } from '../store/useFridgeStore';
 import { useAIStore } from '../store/useAIStore';
 import type { MealPlanResponse } from '../types/index';
 
+const generateHoldingId = () => `holding_${Date.now()}_${Math.floor(Math.random() * 1000)}`;
+
 const MealPlanner: React.FC = () => {
   const [loading, setLoading] = useState(false);
   const [hasChild, setHasChild] = useState(false);
@@ -143,7 +145,7 @@ const MealPlanner: React.FC = () => {
 
   const handleSaveToArchive = async (menu: string, link: string) => {
     try {
-      const holdingId = `holding_${Date.now()}_${Math.floor(Math.random() * 1000)}`;
+      const holdingId = generateHoldingId();
       await updateWeeklyMenu(holdingId, menu, link);
       alert('📦 보관함에 저장되었습니다!');
     } catch {
@@ -160,14 +162,19 @@ const MealPlanner: React.FC = () => {
   if (mealPlan && !loading) {
     return (
       <Box sx={{ display: 'flex', flexDirection: 'column', gap: 1 }}>
-        <Stack spacing={1} sx={{ mt: 0.5 }}>
+        <Box sx={{ 
+          display: 'grid', 
+          gridTemplateColumns: { xs: '1fr', sm: 'repeat(2, 1fr)', md: 'repeat(3, 1fr)' }, 
+          gap: 2, 
+          mt: 1 
+        }}>
           {mealPlan.plan.map((day, idx) => (
-            <Card key={idx} variant="outlined" sx={{ borderRadius: 3, border: '1px solid #e2e8f0', overflow: 'visible' }}>
+            <Card key={idx} variant="outlined" sx={{ borderRadius: 3, border: '1px solid #e2e8f0', overflow: 'visible', display: 'flex', flexDirection: 'column', height: '100%' }}>
               <Box sx={{ bgcolor: '#f8fafc', py: 0.8, px: 2, borderBottom: '1px solid #e2e8f0', borderTopLeftRadius: 12, borderTopRightRadius: 12, display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
                 <Typography variant="caption" sx={{ fontWeight: 900, fontSize: '0.75rem', color: 'text.primary' }}>{day.day}</Typography>
                 <Chip label={`${selectedMenus.filter(m => m.day === day.day).length}개 선택`} size="small" sx={{ height: 18, fontSize: '0.6rem', fontWeight: 800, bgcolor: 'white' }} />
               </Box>
-              <CardContent sx={{ p: 2 }}>
+              <CardContent sx={{ p: 2, flexGrow: 1 }}>
                 <Stack spacing={2}>
                   {(['breakfast', 'lunch', 'dinner'] as const).map(type => {
                     const recommended = day[type];
@@ -221,7 +228,7 @@ const MealPlanner: React.FC = () => {
               </CardContent>
             </Card>
           ))}
-        </Stack>
+        </Box>
 
         <Paper sx={{ p: 1.5, borderRadius: 3, bgcolor: '#fff7ed', border: '1px solid #ffedd5', mt: 1 }}>
           <Stack direction="row" sx={{ justifyContent: 'space-between', alignItems: 'center', mb: 1 }}>

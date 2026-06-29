@@ -50,7 +50,6 @@ import {
 import { CSS } from '@dnd-kit/utilities';
 
 const DAYS = ['월요일', '화요일', '수요일', '목요일', '금요일', '토요일', '일요일'];
-const SHORT_DAYS = ['월', '화', '수', '목', '금', '토', '일'];
 const MEAL_TYPES = ['breakfast', 'lunch', 'dinner'] as const;
 
 const MealPlan: React.FC = () => {
@@ -269,8 +268,6 @@ const MealPlan: React.FC = () => {
                       gap: 1.5, 
                       pb: 1,
                       px: { xs: 2, sm: 0.5 },
-                      '&::-webkit-scrollbar': { height: 4 },
-                      '&::-webkit-scrollbar-thumb': { bgcolor: 'rgba(0,0,0,0.1)', borderRadius: 10 },
                       scrollSnapType: 'x mandatory',
                       scrollBehavior: 'smooth',
                       '&::-webkit-scrollbar': { display: 'none' },

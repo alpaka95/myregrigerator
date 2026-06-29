@@ -90,6 +90,7 @@ export interface AIConfig {
   openaiApiKey?: string;
   geminiModel?: string;
   preferredProvider: 'gemini' | 'openai';
+  dietPreferences?: string[];
 }
 
 export interface AIState {

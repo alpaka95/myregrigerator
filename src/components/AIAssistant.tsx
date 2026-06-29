@@ -259,226 +259,195 @@ const AIAssistant: React.FC = () => {
           </Stack>
         </DialogTitle>
         
-        <Box sx={{ px: 1.5, pb: 0.5 }}>
-          <ToggleButtonGroup
-            value={mode}
-            exclusive
-            onChange={(_, val) => val && setMode(val)}
-            size="small"
-            fullWidth
-            sx={{ 
-              bgcolor: '#f1f5f9', 
-              p: 0.3, 
-              borderRadius: 2,
-              '& .MuiToggleButton-root': { border: 'none', borderRadius: 1.5, fontWeight: 800, fontSize: '0.7rem', py: 0.4 }
-            }}
-          >
-            <ToggleButton value="chat" sx={{ gap: 0.5 }}>
-              <Bot size={12} /> 대화
-            </ToggleButton>
-            <ToggleButton value="meal-plan" sx={{ gap: 0.5 }}>
-              <Calendar size={12} /> 식단추천
-            </ToggleButton>
-          </ToggleButtonGroup>
-        </Box>
-
         <Divider />
-
-        <DialogContent sx={{ flex: 1, overflowY: 'auto', p: 1.5, bgcolor: '#f8fafc' }}>
-          {mode === 'chat' ? (
-            <>
-              {messages.length === 0 && (
-                <Box sx={{ textAlign: 'center', mt: 4 }}>
-                  <Box sx={{ position: 'relative', display: 'inline-block' }}>
-                    <Bot size={48} color="#6366f1" style={{ opacity: 0.2 }} />
-                    <Sparkles size={20} color="#a855f7" style={{ position: 'absolute', top: -5, right: -5, opacity: 0.6 }} />
-                  </Box>
-                  <Typography variant="body2" sx={{ fontWeight: 800, mt: 1.5, color: 'text.secondary' }}>
-                    냉장고 재료로 무엇을 만들까요?
-                  </Typography>
-                </Box>
-              )}
-
-              <Stack spacing={1}>
-                {messages.map((msg, idx) => (
-                  <Box 
-                    key={idx} 
-                    sx={{ 
-                      alignSelf: msg.role === 'user' ? 'flex-end' : 'flex-start',
-                      maxWidth: '85%',
-                      display: 'flex',
-                      gap: 0.8,
-                      flexDirection: msg.role === 'user' ? 'row-reverse' : 'row',
-                      alignItems: 'flex-start',
-                    }}
-                  >
-                    <Avatar sx={{ width: 22, height: 22, bgcolor: msg.role === 'user' ? 'primary.main' : 'secondary.main', flexShrink: 0, fontSize: '0.7rem' }}>
-                      {msg.role === 'user' ? <User size={12} /> : <Bot size={12} />}
-                    </Avatar>
-                    <Box sx={{ 
-                      p: '6px 12px', 
-                      borderRadius: msg.role === 'user' ? '14px 2px 14px 14px' : '2px 14px 14px 14px',
-                      bgcolor: msg.role === 'user' ? 'primary.main' : 'white',
-                      color: msg.role === 'user' ? 'white' : 'text.primary',
-                      boxShadow: '0 2px 8px rgba(0,0,0,0.04)',
-                      border: msg.role === 'user' ? 'none' : '1px solid rgba(0,0,0,0.05)',
-                      width: 'fit-content',
-                      '& p': { m: 0, p: 0, fontSize: '0.78rem', lineHeight: 1.4 },
-                      '& ul, & ol': { pl: 2, m: 0.5, p: 0 },
-                      '& li': { fontSize: '0.75rem', lineHeight: 1.4, m: 0, p: 0 }
-                    }}>
-                      {msg.role === 'user' ? (
-                        <Typography sx={{ fontSize: '0.78rem', lineHeight: 1.4, whiteSpace: 'pre-wrap' }}>
-                          {msg.content.trim()}
-                        </Typography>
-                      ) : (
-                        <ReactMarkdown components={{ 
-                          p: ({node, ...props}: any) => <span style={{display: 'block', margin: 0, padding: 0}} {...props} />,
-                          ul: ({node, ...props}: any) => <ul style={{margin: '4px 0', padding: '0 0 0 18px'}} {...props} />,
-                          ol: ({node, ...props}: any) => <ol style={{margin: '4px 0', padding: '0 0 0 18px'}} {...props} />,
-                          li: ({node, ...props}: any) => <li style={{margin: 2, padding: 0}} {...props} />
-                        }}>
-                          {msg.content.trim()}
-                        </ReactMarkdown>
-                      )}
-                    </Box>
-                  </Box>
-                ))}
-                {loading && (
-                  <Box sx={{ display: 'flex', gap: 0.8, alignItems: 'flex-start' }}>
-                    <Avatar sx={{ width: 22, height: 22, bgcolor: 'secondary.main' }}>
-                      <Bot size={12} />
-                    </Avatar>
-                    <Box sx={{ p: '8px 12px', borderRadius: '2px 14px 14px 14px', bgcolor: 'white', display: 'flex', alignItems: 'center', gap: 1.5, boxShadow: '0 2px 8px rgba(0,0,0,0.04)' }}>
-                      <CircularProgress size={14} thickness={6} sx={{ color: '#6366f1' }} />
-                      <Button 
-                        size="small" 
-                        onClick={handleCancel}
-                        sx={{ 
-                          minWidth: 0, p: '2px 8px', fontSize: '0.65rem', fontWeight: 800, 
-                          color: 'error.main', border: '1px solid', borderColor: 'error.light', borderRadius: 1
-                        }}
-                      >
-                        중단
-                      </Button>
-                    </Box>
-                  </Box>
-                )}
-                <div ref={chatEndRef} style={{ height: 10 }} />
-              </Stack>
-            </>
-          ) : (
-            <MealPlanner />
-          )}
-        </DialogContent>
-
-        {mode === 'chat' && (
-          <Box sx={{ p: 1.2, bgcolor: 'white', borderTop: '1px solid #f1f5f9' }}>
-            <Stack direction="row" spacing={0.6} sx={{ overflowX: 'auto', pb: 1, mb: 1, '&::-webkit-scrollbar': { display: 'none' } }}>
-              <Button 
-                variant="outlined" 
-                size="small"
-                startIcon={<ChefHat size={12} />} 
-                onClick={handleRecipeChef}
-                disabled={loading}
-                sx={{ 
-                  borderRadius: 8, flexShrink: 0, fontWeight: 800, fontSize: '0.65rem', py: 0.4, px: 1.2,
-                  bgcolor: '#f0f9ff', color: '#0369a1', border: '1px solid #e0f2fe',
-                  '&:hover': { bgcolor: '#e0f2fe' }
-                }}
-              >
-                레시피 추천
-              </Button>
-              <Button 
-                variant="outlined" 
-                size="small"
-                startIcon={<TrendingUp size={12} />} 
-                onClick={handleExpenseAnalysis}
-                disabled={loading}
-                sx={{ 
-                  borderRadius: 8, flexShrink: 0, fontWeight: 800, fontSize: '0.65rem', py: 0.4, px: 1.2,
-                  bgcolor: '#f0fdf4', color: '#15803d', border: '1px solid #dcfce7',
-                  '&:hover': { bgcolor: '#dcfce7' }
-                }}
-              >
-                지출 분석
-              </Button>
-              <Button 
-                variant="outlined" 
-                size="small"
-                startIcon={<Camera size={12} />} 
-                onClick={() => fileInputRef.current?.click()}
-                disabled={loading}
-                sx={{ 
-                  borderRadius: 8, flexShrink: 0, fontWeight: 800, fontSize: '0.65rem', py: 0.4, px: 1.2,
-                  bgcolor: '#fef2f2', color: '#b91c1c', border: '1px solid #fee2e2',
-                  '&:hover': { bgcolor: '#fee2e2' }
-                }}
-              >
-                영수증 스캔
-              </Button>
-            </Stack>
-            
-            <Box 
-              component="form" 
-              onSubmit={(e) => { e.preventDefault(); handleSendMessage(); }}
-              sx={{ mt: 0.5 }}
-            >
-              <TextField
-                fullWidth
-                multiline
-                maxRows={3}
-                placeholder="궁금한 것을 물어보세요..."
-                value={inputValue}
-                onChange={(e: React.ChangeEvent<HTMLInputElement>) => setInputValue(e.target.value)}
-                disabled={loading}
-                onKeyDown={(e: React.KeyboardEvent) => {
-                  if (e.key === 'Enter' && !e.shiftKey) {
-                    e.preventDefault();
-                    handleSendMessage();
-                  }
-                }}
-                slotProps={{
-                  input: {
-                    endAdornment: (
-                      <IconButton 
-                        type="submit" 
-                        sx={{ p: '4px', color: inputValue.trim() ? '#6366f1' : '#cbd5e1' }} 
-                        disabled={loading || !inputValue.trim()}
-                      >
-                        <Send size={18} />
-                      </IconButton>
-                    )
-                  }
-                }}
-                sx={{ 
-                  '& .MuiInputBase-root': { 
-                    borderRadius: 1.5, 
-                    bgcolor: 'white', 
-                    fontSize: '0.75rem',
-                    border: '1px solid #e2e8f0',
-                    p: '8px 12px',
-                    transition: 'all 0.2s',
-                    '&:focus-within': {
-                      borderColor: '#6366f1',
-                      boxShadow: '0 0 0 2px rgba(99, 102, 241, 0.1)'
-                    }
-                  },
-                  '& .MuiOutlinedInput-notchedOutline': { border: 'none' }
-                }}
-              />
-            </Box>
-
-            <input 
-              type="file" 
-              accept="image/*" 
-              capture="environment" 
-              ref={fileInputRef} 
-              style={{ display: 'none' }} 
-              onChange={handleFileChange}
-            />
-          </Box>
-        )}
+ 
+         <DialogContent sx={{ flex: 1, overflowY: 'auto', p: 1.5, bgcolor: '#f8fafc' }}>
+           {messages.length === 0 && (
+             <Box sx={{ textAlign: 'center', mt: 4 }}>
+               <Box sx={{ position: 'relative', display: 'inline-block' }}>
+                 <Bot size={48} color="#6366f1" style={{ opacity: 0.2 }} />
+                 <Sparkles size={20} color="#a855f7" style={{ position: 'absolute', top: -5, right: -5, opacity: 0.6 }} />
+               </Box>
+               <Typography variant="body2" sx={{ fontWeight: 800, mt: 1.5, color: 'text.secondary' }}>
+                 냉장고 재료로 무엇을 만들까요?
+               </Typography>
+             </Box>
+           )}
+ 
+           <Stack spacing={1}>
+             {messages.map((msg, idx) => (
+               <Box 
+                 key={idx} 
+                 sx={{ 
+                   alignSelf: msg.role === 'user' ? 'flex-end' : 'flex-start',
+                   maxWidth: '85%',
+                   display: 'flex',
+                   gap: 0.8,
+                   flexDirection: msg.role === 'user' ? 'row-reverse' : 'row',
+                   alignItems: 'flex-start',
+                 }}
+               >
+                 <Avatar sx={{ width: 22, height: 22, bgcolor: msg.role === 'user' ? 'primary.main' : 'secondary.main', flexShrink: 0, fontSize: '0.7rem' }}>
+                   {msg.role === 'user' ? <User size={12} /> : <Bot size={12} />}
+                 </Avatar>
+                 <Box sx={{ 
+                   p: '6px 12px', 
+                   borderRadius: msg.role === 'user' ? '14px 2px 14px 14px' : '2px 14px 14px 14px',
+                   bgcolor: msg.role === 'user' ? 'primary.main' : 'white',
+                   color: msg.role === 'user' ? 'white' : 'text.primary',
+                   boxShadow: '0 2px 8px rgba(0,0,0,0.04)',
+                   border: msg.role === 'user' ? 'none' : '1px solid rgba(0,0,0,0.05)',
+                   width: 'fit-content',
+                   '& p': { m: 0, p: 0, fontSize: '0.78rem', lineHeight: 1.4 },
+                   '& ul, & ol': { pl: 2, m: 0.5, p: 0 },
+                   '& li': { fontSize: '0.75rem', lineHeight: 1.4, m: 0, p: 0 }
+                 }}>
+                   {msg.role === 'user' ? (
+                     <Typography sx={{ fontSize: '0.78rem', lineHeight: 1.4, whiteSpace: 'pre-wrap' }}>
+                       {msg.content.trim()}
+                     </Typography>
+                   ) : (
+                     <ReactMarkdown components={{ 
+                       p: ({node, ...props}: any) => <span style={{display: 'block', margin: 0, padding: 0}} {...props} />,
+                       ul: ({node, ...props}: any) => <ul style={{margin: '4px 0', padding: '0 0 0 18px'}} {...props} />,
+                       ol: ({node, ...props}: any) => <ol style={{margin: '4px 0', padding: '0 0 0 18px'}} {...props} />,
+                       li: ({node, ...props}: any) => <li style={{margin: 2, padding: 0}} {...props} />
+                     }}>
+                       {msg.content.trim()}
+                     </ReactMarkdown>
+                   )}
+                 </Box>
+               </Box>
+             ))}
+             {loading && (
+               <Box sx={{ display: 'flex', gap: 0.8, alignItems: 'flex-start' }}>
+                 <Avatar sx={{ width: 22, height: 22, bgcolor: 'secondary.main' }}>
+                   <Bot size={12} />
+                 </Avatar>
+                 <Box sx={{ p: '8px 12px', borderRadius: '2px 14px 14px 14px', bgcolor: 'white', display: 'flex', alignItems: 'center', gap: 1.5, boxShadow: '0 2px 8px rgba(0,0,0,0.04)' }}>
+                   <CircularProgress size={14} thickness={6} sx={{ color: '#6366f1' }} />
+                   <Button 
+                     size="small" 
+                     onClick={handleCancel}
+                     sx={{ 
+                       minWidth: 0, p: '2px 8px', fontSize: '0.65rem', fontWeight: 800, 
+                       color: 'error.main', border: '1px solid', borderColor: 'error.light', borderRadius: 1
+                     }}
+                   >
+                     중단
+                   </Button>
+                 </Box>
+               </Box>
+             )}
+             <div ref={chatEndRef} style={{ height: 10 }} />
+           </Stack>
+         </DialogContent>
+ 
+         <Box sx={{ p: 1.2, bgcolor: 'white', borderTop: '1px solid #f1f5f9' }}>
+           <Stack direction="row" spacing={0.6} sx={{ overflowX: 'auto', pb: 1, mb: 1, '&::-webkit-scrollbar': { display: 'none' } }}>
+             <Button 
+               variant="outlined" 
+               size="small"
+               startIcon={<ChefHat size={12} />} 
+               onClick={handleRecipeChef}
+               disabled={loading}
+               sx={{ 
+                 borderRadius: 8, flexShrink: 0, fontWeight: 800, fontSize: '0.65rem', py: 0.4, px: 1.2,
+                 bgcolor: '#f0f9ff', color: '#0369a1', border: '1px solid #e0f2fe',
+                 '&:hover': { bgcolor: '#e0f2fe' }
+               }}
+             >
+               레시피 추천
+             </Button>
+             <Button 
+               variant="outlined" 
+               size="small"
+               startIcon={<TrendingUp size={12} />} 
+               onClick={handleExpenseAnalysis}
+               disabled={loading}
+               sx={{ 
+                 borderRadius: 8, flexShrink: 0, fontWeight: 800, fontSize: '0.65rem', py: 0.4, px: 1.2,
+                 bgcolor: '#f0fdf4', color: '#15803d', border: '1px solid #dcfce7',
+                 '&:hover': { bgcolor: '#dcfce7' }
+               }}
+             >
+               지출 분석
+             </Button>
+             <Button 
+               variant="outlined" 
+               size="small"
+               startIcon={<Camera size={12} />} 
+               onClick={() => fileInputRef.current?.click()}
+               disabled={loading}
+               sx={{ 
+                 borderRadius: 8, flexShrink: 0, fontWeight: 800, fontSize: '0.65rem', py: 0.4, px: 1.2,
+                 bgcolor: '#fef2f2', color: '#b91c1c', border: '1px solid #fee2e2',
+                 '&:hover': { bgcolor: '#fee2e2' }
+               }}
+             >
+               영수증 스캔
+             </Button>
+           </Stack>
+           
+           <Box 
+             component="form" 
+             onSubmit={(e) => { e.preventDefault(); handleSendMessage(); }}
+             sx={{ mt: 0.5 }}
+           >
+             <TextField
+               fullWidth
+               multiline
+               maxRows={3}
+               placeholder="궁금한 것을 물어보세요..."
+               value={inputValue}
+               onChange={(e: React.ChangeEvent<HTMLInputElement>) => setInputValue(e.target.value)}
+               disabled={loading}
+               onKeyDown={(e: React.KeyboardEvent) => {
+                 if (e.key === 'Enter' && !e.shiftKey) {
+                   e.preventDefault();
+                   handleSendMessage();
+                 }
+               }}
+               slotProps={{
+                 input: {
+                   endAdornment: (
+                     <IconButton 
+                       type="submit" 
+                       sx={{ p: '4px', color: inputValue.trim() ? '#6366f1' : '#cbd5e1' }} 
+                       disabled={loading || !inputValue.trim()}
+                     >
+                       <Send size={18} />
+                     </IconButton>
+                   )
+                 }
+               }}
+               sx={{ 
+                 '& .MuiInputBase-root': { 
+                   borderRadius: 1.5, 
+                   bgcolor: 'white', 
+                   fontSize: '0.75rem',
+                   border: '1px solid #e2e8f0',
+                   p: '8px 12px',
+                   transition: 'all 0.2s',
+                   '&:focus-within': {
+                     borderColor: '#6366f1',
+                     boxShadow: '0 0 0 2px rgba(99, 102, 241, 0.1)'
+                   }
+                 },
+                 '& .MuiOutlinedInput-notchedOutline': { border: 'none' }
+               }}
+             />
+           </Box>
+ 
+           <input 
+             type="file" 
+             accept="image/*" 
+             capture="environment" 
+             ref={fileInputRef} 
+             style={{ display: 'none' }} 
+             onChange={handleFileChange}
+           />
+         </Box>
       </Dialog>
     </>
   );

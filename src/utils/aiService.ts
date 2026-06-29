@@ -144,9 +144,14 @@ export const aiService = {
   },
 
   async getRecipeChef(items: FoodItem[], signal?: AbortSignal) {
+    const { config } = useAIStore.getState();
+    const dietPrefText = config.dietPreferences && config.dietPreferences.length > 0
+      ? `\n사용자 식습관 선호(필터): ${config.dietPreferences.join(", ")} (반드시 이 선호사항에 맞거나 적합한 레시피로 구성해주세요)`
+      : "";
+
     const prompt = `냉장고 재료: ${items.map(i => i.name).join(", ") || "계란, 파, 김치"}. 
 위의 재료를 주재료로 하되, 집에 있을법한 기본 양념이나 저렴하게 구입 가능한 부재료를 추가하여 만들 수 있는 맛있는 요리 3가지를 추천해줘.
-각 요리마다 필요한 재료(냉장고에 있는 것 vs 추가로 필요한 것), 간단한 레시피, 그리고 추천 이유를 설명해줘. 한국어로 친절하게 답변해줘.`;
+각 요리마다 필요한 재료(냉장고에 있는 것 vs 추가로 필요한 것), 간단한 레시피, 그리고 추천 이유를 설명해줘. 한국어로 친절하게 답변해줘.${dietPrefText}`;
     return this.safeGenerate(prompt, false, undefined, [], signal);
   },
 
@@ -160,7 +165,11 @@ export const aiService = {
   },
 
   async getWeeklyMealPlan(items: FoodItem[], hasChild: boolean, useFridge: boolean, customRequest?: string, schoolMealMode: boolean = false, signal?: AbortSignal) {
+    const { config } = useAIStore.getState();
     const itemsList = useFridge ? (items.map(i => i.name).join(", ") || "계란, 두부, 양파 등 기본 식재료") : "사용 가능한 모든 식재료";
+    const dietPrefText = config.dietPreferences && config.dietPreferences.length > 0
+      ? `\n사용자 식습관 선호 필터: ${config.dietPreferences.join(", ")} (식단 구성 시 이 선호/제한 사항을 철저히 반영하여 구성해주세요)`
+      : "";
     
     let contextStr = "";
     if (schoolMealMode) {
@@ -176,8 +185,8 @@ export const aiService = {
 
     const prompt = `당신은 전문 영양사이자 학교 급식 조리사입니다. ${contextStr}
 대상: ${hasChild ? "초등학생 및 유아가 포함된 가족 (성장기 영양 보충 필요)" : "성인 가족"}
-추가 요청사항: ${customRequest || "없음"}
-
+추가 요청사항: ${customRequest || "없음"}${dietPrefText}
+ 
 결과는 반드시 다음과 같은 JSON 형식으로만 답변해주세요. 다른 설명은 절대 하지 마세요.
 
 {
@@ -196,6 +205,70 @@ export const aiService = {
 * 월요일부터 일요일까지 7일치를 모두 포함하세요.
 * schoolMealMode가 true일 경우 menu에 '현미밥, 소고기미역국, 돈가스, 멸치볶음, 깍두기' 처럼 전체 상차림 구성을 적어주세요.
 * recipeLink는 대표 메뉴 하나를 기준으로 만개한레시피 검색 결과 주소를 만들어주세요.`;
+
+    const response = await this.safeGenerate(prompt, false, undefined, [], signal);
+    if (!response) return null;
+    
+    try {
+      const jsonMatch = response.match(/\{[\s\S]*\}/);
+      if (jsonMatch) return JSON.parse(jsonMatch[0]);
+      return response;
+    } catch {
+      return response;
+    }
+  },
+
+  async getEmptyingChallenge(items: FoodItem[], signal?: AbortSignal) {
+    const { config } = useAIStore.getState();
+    const dietPrefText = config.dietPreferences && config.dietPreferences.length > 0
+      ? `\n사용자 식습관 선호 필터: ${config.dietPreferences.join(", ")}`
+      : "";
+
+    const targetItemsList = items
+      .filter(i => i.expiryDate)
+      .sort((a, b) => new Date(a.expiryDate!).getTime() - new Date(b.expiryDate!).getTime())
+      .slice(0, 5)
+      .map(i => i.name);
+
+    const itemsText = targetItemsList.length > 0
+      ? targetItemsList.join(", ")
+      : (items.slice(0, 5).map(i => i.name).join(", ") || "두부, 계란, 파");
+
+    const prompt = `당신은 식자재 낭비를 막고 절약을 돕는 전문 셰프입니다.
+현재 유통기한이 임박하여 냉장고에서 빨리 소비해야 할 식재료 후보군: ${itemsText}
+
+위의 식재료 후보군 중 2~3가지를 확실하게 소비할 수 있는 '3일 냉장고 털기 챌린지' 식단을 설계해 주세요.
+각 날짜별(1일차, 2일차, 3일차)로 1가지 메인 요리 레시피를 제안해야 합니다.
+
+결과는 반드시 다음과 같은 JSON 형식으로만 답변해주세요. 다른 설명은 절대 하지 마세요.
+
+{
+  "targetItems": ["소비한 재료 1", "소비한 재료 2"],
+  "estimatedSavings": 35000,
+  "steps": [
+    {
+      "day": 1,
+      "recipeName": "요리명 1",
+      "ingredientsUsed": ["사용한 재료 1", "사용한 재료 2"],
+      "instructions": "레시피 요약 및 상세 조리법 단계별 설명 (마크다운 없이 텍스트로 작성)"
+    },
+    {
+      "day": 2,
+      "recipeName": "요리명 2",
+      "ingredientsUsed": ["사용한 재료 1"],
+      "instructions": "레시피 요약 및 상세 조리법 단계별 설명"
+    },
+    {
+      "day": 3,
+      "recipeName": "요리명 3",
+      "ingredientsUsed": ["사용한 재료 1", "사용한 재료 3"],
+      "instructions": "레시피 요약 및 상세 조리법 단계별 설명"
+    }
+  ]
+}
+
+* estimatedSavings는 외부에서 재료를 사지 않고 냉장고 안에서 해결함으로써 절약되는 예상 비용(원 단위 숫자, 예: 30000)을 현실적으로 적어주세요.
+* 한국어로 친절하게 작성해주세요.${dietPrefText}`;
 
     const response = await this.safeGenerate(prompt, false, undefined, [], signal);
     if (!response) return null;

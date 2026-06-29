@@ -2,7 +2,7 @@ import { useEffect, useState } from 'react';
 import { Routes, Route, Navigate, useLocation, Link } from 'react-router-dom';
 import { ThemeProvider, CssBaseline, Box, CircularProgress, Snackbar, Button, IconButton, BottomNavigation, BottomNavigationAction, Paper, Stack, Typography } from '@mui/material';
 import { onAuthStateChanged, getRedirectResult } from 'firebase/auth';
-import { X, Refrigerator as FridgeIcon, ReceiptText, Settings as SettingsIcon, Utensils } from 'lucide-react';
+import { X, Refrigerator as FridgeIcon, ReceiptText, Settings as SettingsIcon, Utensils, Sparkles } from 'lucide-react';
 import { theme } from './styles/theme';
 import { auth } from './firebase';
 import { useAuthStore } from './store/useAuthStore';
@@ -13,8 +13,8 @@ import CompartmentDetail from './pages/CompartmentDetail';
 import Ledger from './pages/Ledger';
 import Login from './pages/Login';
 import Settings from './pages/Settings';
-import AIAssistant from './components/AIAssistant';
 import MealPlan from './pages/MealPlan';
+import AIChefPage from './pages/AIChef';
 
 function App() {
   const { user, initialized, setUser, setLoading, setInitialized } = useAuthStore();
@@ -25,7 +25,6 @@ function App() {
   useSyncHousehold();
 
   useEffect(() => {
-    // 1. 리다이렉트 결과 처리
     getRedirectResult(auth)
       .then((result) => {
         if (result?.user) {
@@ -37,7 +36,6 @@ function App() {
         console.error("Redirect Error:", err);
       });
 
-    // 2. 통합 인증 리스너
     const unsubscribe = onAuthStateChanged(auth, (firebaseUser) => {
       console.log("Auth State:", firebaseUser ? "Logged In" : "Logged Out");
       setUser(firebaseUser);
@@ -60,7 +58,6 @@ function App() {
     setSnackbarOpen(false);
   };
 
-  // 초기화가 완전히 끝나기 전까지는 무조건 로딩 화면
   if (!initialized) {
     return (
       <ThemeProvider theme={theme}>
@@ -88,6 +85,7 @@ function App() {
           ) : (
             <>
               <Route path="/" element={<Dashboard />} />
+              <Route path="/ai-chef" element={<AIChefPage />} />
               <Route path="/ledger" element={<Ledger />} />
               <Route path="/meal-plan" element={<MealPlan />} />
               <Route path="/settings" element={<Settings />} />
@@ -100,18 +98,19 @@ function App() {
 
       {user && (
         <>
-          <AIAssistant />
           <Paper sx={{ position: 'fixed', bottom: 0, left: 0, right: 0, zIndex: 1100 }} elevation={3}>
             <BottomNavigation
               showLabels
               value={
-                location.pathname === '/meal-plan' ? 1 : 
-                location.pathname === '/ledger' ? 2 :
-                location.pathname === '/settings' ? 3 : 0
+                location.pathname === '/meal-plan' ? 2 :
+                location.pathname === '/ai-chef' ? 1 :
+                location.pathname === '/ledger' ? 3 :
+                location.pathname === '/settings' ? 4 : 0
               }
               sx={{ height: 80, '& .MuiBottomNavigationAction-root': { color: 'text.secondary', minWidth: 0, px: 1 }, '& .Mui-selected': { color: 'primary.main' } }}
             >
               <BottomNavigationAction label="냉장고" icon={<FridgeIcon size={22} />} component={Link} to="/" />
+              <BottomNavigationAction label="AI 셰프" icon={<Sparkles size={22} />} component={Link} to="/ai-chef" />
               <BottomNavigationAction label="식단" icon={<Utensils size={22} />} component={Link} to="/meal-plan" />
               <BottomNavigationAction label="가계부" icon={<ReceiptText size={22} />} component={Link} to="/ledger" />
               <BottomNavigationAction label="설정" icon={<SettingsIcon size={22} />} component={Link} to="/settings" />

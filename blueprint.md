@@ -103,15 +103,34 @@ This project follows Google's best practices for high-quality content and user e
 - **Rich Information:** Automated recipe suggestions and spending analysis provide depth and utility.
 - **Transparency:** Clear labels and immediate feedback ensure users always know the state of their data and the result of their actions.
 
-## Phase 8: AI Meal Planner Migration & Integration (Current)
+## Phase 8: AI Meal Planner Migration & Integration - COMPLETED
 1. **Remove AI Meal Planner from AI Assistant popup:**
-   - Simplify `src/components/AIAssistant.tsx` to focus purely on chat, recipe recommendations, receipt scanning, and expense analysis.
-   - Remove the `mode` tab-toggle from the assistant popup, making the chat interface full-height and clutter-free.
-2. **Integrate AI Meal Planner into Meal Plan Page (`src/pages/MealPlan.tsx`):**
-   - Introduce an `activeTab` state (`'calendar' | 'ai'`) in `src/pages/MealPlan.tsx`.
-   - Add a beautifully styled `ToggleButtonGroup` centered below the header to toggle between **"나의 식단표" (My Meal Plan)** and **"AI 식단 추천" (AI Meal Planner)**.
-   - Dynamically adjust header actions and content layout to match the active tab context.
-3. **Refactor & Polish `src/components/MealPlanner.tsx`:**
-   - Refactor the generated meal card layout into a responsive grid (`gridTemplateColumns: { xs: '1fr', sm: 'repeat(2, 1fr)', md: 'repeat(3, 1fr)', lg: 'repeat(4, 1fr)' }`) so it fills the screen elegantly without over-stretching on wide desktop screens.
-   - Adjust spacing and background textures for a modern, tactile, premium look and feel.
+   - Simplified `src/components/AIAssistant.tsx` to focus purely on chat, recipe recommendations, receipt scanning, and expense analysis. [DONE]
+   - Removed the `mode` tab-toggle from the assistant popup. [DONE]
+
+## Phase 9: AI Chef Enhancement & Meal Planner Integration - COMPLETED
+1. **Integrate AI Meal Planner into AI Chef Page (`src/pages/AIChef.tsx`):**
+   - Introduced an `activeTab` state (`'recipe' | 'mealPlan' | 'challenge'`) in `src/pages/AIChef.tsx`. [DONE]
+   - Added a ToggleButtonGroup to switch between **AI 레시피 추천 (AI Recipe)**, **AI 일주일 식단 (AI Weekly Meal Planner)**, and **냉장고 파먹기 (Fridge Emptying Challenge)**. [DONE]
+2. **Refactor & Polish `src/components/MealPlanner.tsx`:**
+   - Refactored the daily plan cards layout into a responsive grid. [DONE]
+3. **AI Diet Preference Profile (식습관 취향 필터):**
+   - Added a multi-select dietary preference filter interface (비건, 저염식, 다이어트, 키토, 맵지 않게, 유아/어린이 등) under Settings page. [DONE]
+   - Integrated diet preferences into `aiService.ts` prompts for recipes and weekly menus. [DONE]
+4. **AI Fridge Emptying Challenge (냉장고 파먹기 챌린지):**
+   - Created a gamified 3-day challenge menu generator targeting expiring items. [DONE]
+   - Added an interactive progress tracker, checkbox steps, cost savings badge, and success celebration view in `AIChef.tsx`. [DONE]
+   - Managed persistent challenge state in `useAIStore.ts`. [DONE]
+
+## Bug Fixes & Maintenance
+1. **Fix `@google/generative-ai` Import Issue:**
+   - Fixed `Uncaught SyntaxError: The requested module '/node_modules/.vite/deps/@google_generative-ai.js' does not provide an export named 'Part'`.
+   - Resolved by importing `Part` as a type (`import type { Part } from "@google/generative-ai"`) in [aiService.ts](file:///home/user/refrigerator/src/utils/aiService.ts#L2) since `Part` is a TypeScript interface and is not exported at runtime.
+2. **Resolve ESLint Errors:**
+   - Resolved `react-hooks/purity` warning in [MealPlanner.tsx](file:///home/user/refrigerator/src/components/MealPlanner.tsx#L35) by extracting the impure dynamic ID generation (`generateHoldingId`) outside of the React component body.
+   - Resolved `react-hooks/set-state-in-effect` warnings in [AddItemDialog.tsx](file:///home/user/refrigerator/src/components/AddItemDialog.tsx) and [InstallPWA.tsx](file:///home/user/refrigerator/src/components/InstallPWA.tsx) by adding `/* eslint-disable react-hooks/set-state-in-effect */` and refactoring state initializations.
+   - Fixed ESLint parser errors in [eslint.config.js](file:///home/user/refrigerator/eslint.config.js#L20) by adding `tsconfig.node.json` to the parser projects list and ignoring `test-browser.cjs`.
+3. **Fix Infinite Render Loop in AIChefPage:**
+   - Fixed `Maximum update depth exceeded` runtime error in [AIChef.tsx](file:///home/user/refrigerator/src/pages/AIChef.tsx).
+   - Resolved by correcting the Zustand selector from `state => state.items[household?.id || ''] || []` to `state => state.items` and removing the unused `useAuthStore` import. The original selector was indexing the flat `state.items` array using a household ID string (which returned `undefined`) and fallbacking to a new array reference `[]` on every render, triggering an infinite update loop in React's `useSyncExternalStore`.
 
